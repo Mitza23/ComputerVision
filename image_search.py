@@ -11,14 +11,13 @@ def load_images_from_folder(folder):
     images = {}
     for filename in glob.glob(os.path.join(folder, '*.jpg')):
         img = cv2.imread(filename)
-        # img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         if img is not None:
             images[filename] = img
     return images
 
 
 # Compute histogram for an image
-def compute_histogram(image, bins=256, normalize=True):
+def compute_histogram(image, bins=256, normalize=False):
     color = ('b', 'g', 'r')
     histograms = []
     for channel, col in enumerate(color):
@@ -52,11 +51,13 @@ def plot_histogram(hist):
 
 
 # Compare histograms using all available metrics in OpenCV
-def compare_histograms(hist1, hist2):
+def compare_histograms(hist1, hist2, normalize=True):
     methods = [cv2.HISTCMP_CORREL, cv2.HISTCMP_CHISQR, cv2.HISTCMP_INTERSECT, cv2.HISTCMP_BHATTACHARYYA]
     results = {}
     for method in methods:
         results[method] = cv2.compareHist(hist1, hist2, method)
+    if normalize:
+        results = normalize_results(results)
     return results
 
 
@@ -97,18 +98,33 @@ def name_results(results):
     return named_results
 
 
-def search_images(query_image, images, metric=cv2.HISTCMP_CORREL, bins=256):
-    histograms = {filename: compute_histogram(img, bins=bins) for filename, img in images.items()}
-    query_histogram = compute_histogram(query_image)
+def sort_results(results, method):
+    sorted_results = dict(sorted(results.items(), key=lambda item: item[1][method], reverse=True))
+    return sorted_results
+
+
+def search_images(query_image, images, bins=256, sorting_metric=cv2.HISTCMP_CORREL):
+    histograms = {filename: compute_histogram(img, bins=bins, normalize=False) for filename, img in images.items()}
+    query_histogram = compute_histogram(query_image, bins=bins, normalize=False)
 
     results = {}
     for filename, hist in histograms.items():
         comparison = compare_histograms(query_histogram, hist)
         results[filename] = comparison
 
-    sorted_results = dict(sorted(results.items(), key=lambda item: item[metric], reverse=True))
+    sorted_results = sort_results(results, sorting_metric)
     return sorted_results
 
+
+def print_results(reference_comparison, results):
+    print("Query image:")
+    reference_comparison = name_results(reference_comparison)
+    print(f"{reference_comparison}")
+
+    print("Search results:")
+    for filename, comparison in results.items():
+        named_comparison = name_results(comparison)
+        print(f"{filename}: {named_comparison}")
 
 # Main function
 def main():
@@ -116,9 +132,20 @@ def main():
     images = load_images_from_folder(folder)
     query_image = cv2.imread('images/query.jpg')
 
-    results = search_images(query_image, images)
-    print(results)
+    bins = 32
+    reference_histogram = compute_histogram(query_image, bins=bins, normalize=False)
+    reference_comparison = compare_histograms(reference_histogram, reference_histogram)
 
+    results = search_images(query_image, images, bins=bins)
+    print_results(reference_comparison, results)
 
 if __name__ == "__main__":
-    main()
+    image = list(load_images_from_folder('images/search').values())[2]
+    hist_32 = compute_histogram(image, bins=32)
+    plot_histogram(hist_32)
+    # hist_64 = compute_histogram(image, bins=64)
+    # hist_128 = compute_histogram(image, bins=128)
+    # hist_256 = compute_histogram(image, bins=256)
+    # plot_histogram(hist_64)
+    # plot_histogram(hist_128)
+    # plot_histogram(hist_256)
