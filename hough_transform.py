@@ -1,7 +1,7 @@
 # Python program to illustrate HoughLine
 # method for line detection
 import math
-import time
+
 import cv2
 import numpy as np
 
@@ -105,6 +105,63 @@ def hough_transform(file_name, peak_vicinity=1, theta_precision=5, pixel_intensi
     # cv2.destroyAllWindows()
     return lines
 
+
+def hough_transform_segments(file_name, peak_vicinity=1, theta_precision=5, pixel_intensity_threshold=200):
+    # Load the desired image
+    img = cv2.imread(file_name)
+
+    # Convert the img to grayscale
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    image = np.asarray(gray)  # (height, width)
+    img_h, img_w = image.shape
+    diag = int(math.sqrt(img_w ** 2 + img_h ** 2))
+
+    # The precision of the search is of 1 degree and of one pixel
+    accumulator = [[[] for _ in range(180)] for _ in range(diag)]
+
+    # Mark down in the accumulator the lines that can go through each point from the image
+    for i, line in enumerate(image):
+        for j, val in enumerate(line):
+            if val > pixel_intensity_threshold:
+                for theta in range(0, 180, theta_precision):
+                    # x*cos(theta) + y*sin(theta) = r
+                    r = int(j * math.cos(math.pi * theta / 180) + i * math.sin(math.pi * theta / 180))
+                    accumulator[r][theta].append((i, j))
+
+    # Find out the biggest frequency in the accumulator
+    max = 0
+    for i in range(diag):
+        for j in range(180):
+            if len(accumulator[i][j]) > max:
+                max = len(accumulator[i][j])
+
+    segments = []
+    # y = (r - x * cos(theta)) / sin(theta)
+    for i in range(diag):
+        for j in range(180):
+            if max - len(accumulator[i][j]) <= peak_vicinity:
+                segments.append(accumulator[i][j])
+                for point in accumulator[i][j]:
+                    cv2.circle(img, (point[1], point[0]), 1, (0, 0, 255), 1)
+
+    cv2.imwrite('segments_' + file_name, img)
+
+    # for i in range(diag):
+    #     for j in range(180):
+    #         print(int(accumulator[i][j]), end=' ')
+    #     print('')
+
+    # Normalize values in the Hough space for better visibility
+    hough_space = np.zeros((diag, 180))
+    for i in range(diag):
+        for j in range(180):
+            hough_space[i][j] = (255 // max) * len(accumulator[i][j])
+
+    cv2.imwrite('houghSpace_' + file_name, hough_space)
+
+    return segments
+
 def hough_transform_circles(file_name, radius=20, peak_vicinity=1, pixel_intensity_threshold=200):
     # Load the desired image
     img = cv2.imread(file_name)
@@ -151,4 +208,5 @@ def accumulate_circles(accumulator, image, img_h, img_w, pixel_intensity_thresho
 
 if __name__ == '__main__':
     # hough_transform("5.png", peak_vicinity=1, theta_precision=5, pixel_intensity_threshold=200)
-    hough_transform_circles("circles.png", radius=20, peak_vicinity=1, pixel_intensity_threshold=200)
+    # hough_transform_circles("circles.png", radius=20, peak_vicinity=1, pixel_intensity_threshold=200)
+    hough_transform_segments("5.png", peak_vicinity=1, theta_precision=5, pixel_intensity_threshold=200)
