@@ -132,7 +132,7 @@ def main():
     images = load_images_from_folder(folder)
     query_image = cv2.imread('images/query.jpg')
 
-    bins = 32
+    bins = 64
     reference_histogram = compute_histogram(query_image, bins=bins, normalize=False)
     reference_comparison = compare_histograms(reference_histogram, reference_histogram)
 
@@ -140,12 +140,13 @@ def main():
     print_results(reference_comparison, results)
 
 if __name__ == "__main__":
-    image = list(load_images_from_folder('images/search').values())[2]
-    hist_32 = compute_histogram(image, bins=32)
-    plot_histogram(hist_32)
+    # image = list(load_images_from_folder('images/search').values())[2]
+    # hist_32 = compute_histogram(image, bins=32)
+    # plot_histogram(hist_32)
     # hist_64 = compute_histogram(image, bins=64)
     # hist_128 = compute_histogram(image, bins=128)
     # hist_256 = compute_histogram(image, bins=256)
     # plot_histogram(hist_64)
     # plot_histogram(hist_128)
     # plot_histogram(hist_256)
+    main()

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Load the image
-image = cv2.imread('images/misc/rectangle.png', cv2.IMREAD_GRAYSCALE)
+image = cv2.imread('images/misc/building.png', cv2.IMREAD_GRAYSCALE)
 
 # Define the structuring elements
 cross = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
